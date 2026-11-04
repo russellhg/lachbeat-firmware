@@ -1,10 +1,10 @@
-// follower_promini.cpp - Team H03 LatchBeat Hot-Plug Follower Firmware (Task H-01 / H-03)
+// follower_promini.cpp - Latchbeat Follower Firmware 
 //
 // Target: Arduino Pro Mini (ATmega328P, 3.3V, 8 MHz)
-// Supports all 3 Nov 12 Demo Follower Types via MODULE_TYPE:
-//   - lb::TYPE_DEMO_BUTTON (0x01): Pushbutton on D3 to GND
-//   - lb::TYPE_DEMO_POT    (0x02): 10k Potentiometer on A0 (0..3.3V)
-//   - lb::TYPE_ENCODER     (0x03): Quadrature Rotary Encoder on D4 (CLK), D5 (DT), D6 (SW)
+// Supports all following follower types via MODULE_TYPE
+//   lb::TYPE_DEMO_BUTTON (0x01): Pushbutton on D3 to GND
+//   lb::TYPE_DEMO_POT    (0x02): 10k Potentiometer on A0 (0..3.3V)
+//   lb::TYPE_ENCODER     (0x03): Quadrature Rotary Encoder on D4 (CLK), D5 (DT), D6 (SW)
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -12,7 +12,7 @@
 #include "pin_map.h"
 #include "lb_bus.h"
 
-// ---------------- Select Module Type Before Flashing ----------------
+// Select Module before flashing
 const uint8_t MODULE_TYPE = lb::TYPE_DEMO_BUTTON;  // Change to TYPE_DEMO_POT or TYPE_ENCODER
 const uint8_t FW_VERSION  = 0x01;
 
@@ -136,7 +136,7 @@ void scanInputs() {
   unsigned long now = millis();
   bool changed = false;
 
-  // 1. Scan pushbutton (D3 or encoder push-switch D6)
+  // Scan pushbutton (D3 or encoder push-switch D6)
   uint8_t rawBtn = ((digitalRead(pins::PIN_BUTTON) == LOW) ||
                     (digitalRead(pins::PIN_ENC_SW) == LOW)) ? 0x01 : 0x00;
   if (rawBtn != lastRawBtn) { lastRawBtn = rawBtn; lastBtnChange = now; }
@@ -145,7 +145,7 @@ void scanInputs() {
     changed = true;
   }
 
-  // 2. Scan analog pot (if TYPE_DEMO_POT)
+  // Scan analog pot (if TYPE_DEMO_POT)
   if (MODULE_TYPE == lb::TYPE_DEMO_POT) {
     uint16_t pot = (uint16_t)analogRead(pins::PIN_POT);
     if (pot > lastPot + 8 || pot + 8 < lastPot) {
@@ -154,7 +154,7 @@ void scanInputs() {
     }
   }
 
-  // 3. Scan quadrature rotary encoder (if TYPE_ENCODER)
+  // Scan quadrature rotary encoder (if TYPE_ENCODER)
   if (MODULE_TYPE == lb::TYPE_ENCODER) {
     uint8_t encA = (uint8_t)digitalRead(pins::PIN_ENC_A);
     if (encA != lastEncA && encA == LOW) {
