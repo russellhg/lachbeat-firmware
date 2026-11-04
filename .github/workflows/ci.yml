@@ -1,0 +1,45 @@
+# .github/workflows/ci.yml - latchbeat build CI (H-01)
+# Automatically compiles Leader (ESP-32S & ESP32-S3) and Follower (Pro Mini) targets
+# on every push or pull request to main.
+
+name: PlatformIO Firmware CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Cache PlatformIO Packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO Core
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+
+      - name: Build Breadboard Leader / Card (HiLetgo ESP-32S)
+        run: pio run -e card_esp32dev
+
+      - name: Build V1 Custom PCB Leader / Card (ESP32-S3)
+        run: pio run -e card_esp32s3
+
+      - name: Build Follower Module (Arduino Pro Mini 3.3V 8MHz)
+        run: pio run -e follower_promini
