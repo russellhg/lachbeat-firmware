@@ -2,12 +2,12 @@
 //
 // Targeting ESP-32S (breadboard prototype) or ESP32-S3 (V1 PCB)
 // Includes:
-//   - Wireless BLE-MIDI
-//   - Live GPIO Pin-Finder ('d') & I2C Bus Scanner ('i') for instant breadboard verification
-//   - Non-blocking 1 kHz (1 ms) scan loop & 8-bit shift-register debouncing 
-//   - Active-Note Tracking Table: flushes exact Note-Offs on scale change or unplug
-//   - Non-blocking MPU-6050 (0x68) tilt-to-MIDI CC#1 with EMA filter
-//   - Full LatchBeat I2C hot-plug discovery (0x30) & follower polling
+//   Wireless BLE-MIDI
+//   Live GPIO Pin-Finder ('d') & I2C Bus Scanner ('i') for instant breadboard verification
+//   Non-blocking 1 kHz (1 ms) scan loop & 8-bit shift-register debouncing 
+//   Active-Note Tracking Table: flushes exact Note-Offs on scale change or unplug
+//   Non-blocking MPU-6050 (0x68) tilt-to-MIDI CC#1 with EMA filter
+//   Full LatchBeat I2C hot-plug discovery (0x30) & follower polling
 #include <Arduino.h>
 #include <Wire.h>
 #include <NimBLEDevice.h>
