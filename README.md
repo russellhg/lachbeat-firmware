@@ -1,2 +1,2 @@
 # lachbeat-firmware
-files for senior design project latchbeat
+The following contain the files to run the card for senior design project "Latchbeat".
