@@ -43,7 +43,7 @@ const int PIN_IMU_SCL       = 48;   // Dedicated internal IMU SCL
 // 8 Keys
 const uint8_t NUM_CARD_KEYS = 8;
 const int CARD_KEY_PINS[NUM_CARD_KEYS] = { 1, 2, 3, 5, 6, 7, 14, 17 };
-const PIN_MODE_BTN = 0;
+const int PIN_MODE_BTN = 0;
 
 // LEDS & battery sense
 const int PIN_RGB_LED       = 38;   // WS2812 / SK6812 data line
