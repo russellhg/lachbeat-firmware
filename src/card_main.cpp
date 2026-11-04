@@ -1,21 +1,20 @@
-// card_main.cpp - Team H03 Ported Controller Card & LatchBeat Leader Firmware (H-01, H-03, H-04)
+// card_main.cpp - Card & leader firmware
 //
-// Hardware Target: HiLetgo ESP-32S (breadboard prototype) or ESP32-S3 (V1 PCB)
+// Targeting ESP-32S (breadboard prototype) or ESP32-S3 (V1 PCB)
 // Includes:
-//   - Wireless BLE-MIDI (NimBLE GATT server advertising as "LatchBeat MIDI")
+//   - Wireless BLE-MIDI
 //   - Live GPIO Pin-Finder ('d') & I2C Bus Scanner ('i') for instant breadboard verification
-//   - Non-blocking 1 kHz (1 ms) scan loop & 8-bit shift-register debouncing (H-04)
-//   - Active-Note Tracking Table: flushes exact Note-Offs on scale change or unplug (H-04)
-//   - Non-blocking MPU-6050 (0x68) tilt-to-MIDI CC#1 with EMA filter (H-04)
-//   - Full LatchBeat I2C hot-plug discovery (0x30) & follower polling (H-02 / H-03)
-
+//   - Non-blocking 1 kHz (1 ms) scan loop & 8-bit shift-register debouncing 
+//   - Active-Note Tracking Table: flushes exact Note-Offs on scale change or unplug
+//   - Non-blocking MPU-6050 (0x68) tilt-to-MIDI CC#1 with EMA filter
+//   - Full LatchBeat I2C hot-plug discovery (0x30) & follower polling
 #include <Arduino.h>
 #include <Wire.h>
 #include <NimBLEDevice.h>
 #include "pin_map.h"
 #include "lb_bus.h"
 
-// ---------------- BLE-MIDI Standard UUIDs (MMA Specification v1.0) ----------------
+//BLE-MIDI Standard UUIDs (MMA Specification v1.0)
 #define BLE_MIDI_SERVICE_UUID "03B80E5A-EDE8-4B33-A751-6CE34EC4C700"
 #define BLE_MIDI_CHAR_UUID    "7772E5DB-3868-4112-A1A9-F2669D106BF3"
 
@@ -35,7 +34,7 @@ class BleMidiServerCallbacks : public NimBLEServerCallbacks {
 bool serialBinaryMidiMode = false;
 bool pinDiagnosticMode    = false;
 
-// ---------------- Musical Scales & Active-Note Tracking (H-04) ----------------
+//Scales/Note Tracking
 const uint8_t NUM_SCALES = 4;
 const char* SCALE_NAMES[NUM_SCALES] = {
   "C Major", "A Natural Minor", "C Major Pentatonic", "Chromatic"
@@ -64,14 +63,14 @@ const int DIAG_PINS[DIAG_PIN_COUNT] = {
 };
 uint8_t diagPinLast[DIAG_PIN_COUNT];
 
-// ---------------- MPU-6050 (0x68) State (H-04) ----------------
+//MPU-6050 (0x68) state
 const uint8_t MPU6050_ADDR = 0x68;
 bool    mpuPresent         = false;
 int32_t emaAccelX          = 0;
 int32_t emaAccelY          = 0;
 uint8_t lastModWheelCC     = 64;
 
-// ---------------- LatchBeat Follower Module Table (H-02 / H-03) ----------------
+//Follower module table
 struct Module {
   bool    known;
   bool    present;
@@ -101,7 +100,7 @@ uint32_t collisions    = 0;
 
 inline uint8_t addrOf(uint8_t idx) { return lb::SESSION_FIRST + idx; }
 
-// ---------------- BLE-MIDI & Serial Output Functions ----------------
+//BLE-MIDI and serial output functions
 void initBleMidi() {
   NimBLEDevice::init("LatchBeat MIDI");
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
@@ -170,7 +169,7 @@ void sendMidiCC(uint8_t ch, uint8_t cc, uint8_t val) {
   }
 }
 
-// H-04 Requirement: Flush all active notes before changing scale/octave or on Panic
+//Flushes all active notes before changing scale/octave or on Panic
 void flushAllCardNotes() {
   for (uint8_t i = 0; i < pins::NUM_CARD_KEYS; i++) {
     if (keyPressed[i] && activeKeyNote[i] != 0xFF) {
@@ -191,7 +190,7 @@ void cycleScaleMode() {
   }
 }
 
-// ---------------- Non-Blocking 1 kHz Card Key Scanner (H-04) ----------------
+// Non-Blocking 1 kHz Card Key Scanner (H-04)
 void scanCardKeys1kHz() {
   if (pinDiagnosticMode) {
     for (uint8_t i = 0; i < DIAG_PIN_COUNT; i++) {
@@ -209,7 +208,7 @@ void scanCardKeys1kHz() {
     uint8_t raw = (uint8_t)digitalRead(pins::CARD_KEY_PINS[i]);
     keyHistory[i] = (uint8_t)((keyHistory[i] << 1) | (raw & 0x01));
 
-    // Falling edge settled for 4 consecutive ms (0b11110000 = 0xF0) -> Press
+    //Falling edge settled for 4 consecutive ms (0b11110000 = 0xF0) -> Press
     if (keyHistory[i] == 0xF0 && !keyPressed[i]) {
       keyPressed[i] = true;
       uint8_t note = baseMidiNote + SCALE_INTERVALS[currentScale][i];
@@ -221,7 +220,7 @@ void scanCardKeys1kHz() {
         cycleScaleMode();
       }
     }
-    // Rising edge settled for 4 consecutive ms (0b00001111 = 0x0F) -> Release
+    //Rising edge settled for 4 consecutive ms (0b00001111 = 0x0F) -> Release
     else if (keyHistory[i] == 0x0F && keyPressed[i]) {
       keyPressed[i] = false;
       if (activeKeyNote[i] != 0xFF) {
@@ -231,7 +230,7 @@ void scanCardKeys1kHz() {
     }
   }
 
-  // Optional P19 Mode button
+  //Optional P19 Mode button
   uint8_t rawMode = (uint8_t)digitalRead(pins::PIN_MODE_BTN);
   modeBtnHistory = (uint8_t)((modeBtnHistory << 1) | (rawMode & 0x01));
   if (modeBtnHistory == 0xF0 && !modeBtnPressed) {
@@ -242,7 +241,7 @@ void scanCardKeys1kHz() {
   }
 }
 
-// ---------------- MPU-6050 Non-Blocking Tilt Reader (H-04) ----------------
+//Non-blocking tilt reader
 void initMpu6050() {
   Wire.beginTransmission(MPU6050_ADDR);
   Wire.write(0x6B);  // PWR_MGMT_1 register
@@ -279,7 +278,7 @@ void pollMpu6050() {
   }
 }
 
-// ---------------- Interactive I2C Bus Scanner ('i' command) ----------------
+//I2C Bus Scanner
 void runI2cScanner() {
   Serial.println("=== Scanning I2C Bus (SDA=P21, SCL=P22) ===");
   uint8_t found = 0;
@@ -298,7 +297,7 @@ void runI2cScanner() {
   Serial.println("===========================================");
 }
 
-// ---------------- LatchBeat I2C Bus Helpers (H-02 / H-03) ----------------
+//I2C Bus Helpers
 void busBegin() {
   Wire.begin(pins::PIN_SDA, pins::PIN_SCL, I2C_HZ);
   Wire.setTimeOut(20);
@@ -514,21 +513,21 @@ void setup() {
 }
 
 void loop() {
-  // 1. Deterministic 1 kHz (1000 us) non-blocking Card key scan (H-04)
+  //Deterministic 1 kHz (1000 us) non-blocking Card key scan (H-04)
   uint32_t nowUs = micros();
   if ((uint32_t)(nowUs - lastScanUs) >= 1000) {
     lastScanUs += 1000;
     scanCardKeys1kHz();
   }
 
-  // 2. Non-blocking 50 Hz MPU-6050 tilt poll (H-04)
+  // Non-blocking 50 Hz MPU-6050 tilt poll (H-04)
   uint32_t nowMs = millis();
   if ((nowMs - lastImuPoll) >= IMU_POLL_MS) {
     lastImuPoll = nowMs;
     pollMpu6050();
   }
 
-  // 3. Non-blocking LatchBeat follower discovery & event polling (H-02 / H-03)
+  //Non-blocking LatchBeat follower discovery & event polling (H-02 / H-03)
   bool alert = (digitalRead(pins::PIN_ALERT) == LOW);
   if (alert || (nowMs - lastDiscover) >= DISCOVER_MS) {
     lastDiscover = nowMs;
@@ -543,7 +542,7 @@ void loop() {
 
   if (busErrors >= ERR_LIMIT && digitalRead(pins::PIN_SDA) == LOW) busClear();
 
-  // 4. Interactive Serial Monitor Diagnostic & Control Commands
+  // Control Commands & Serial Diagnostic
   if (Serial.available()) {
     char c = (char)Serial.read();
     if (c == 'm') cycleScaleMode();
