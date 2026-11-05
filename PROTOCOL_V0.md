@@ -1,4 +1,4 @@
-# LatchBeat Module Bus Protocol Specification V0 (Task H-02)
+# Latchbeat Bus Module Protocol Specification
 
 ## 1. Physical Layer & Addressing (`lb_bus.h`)
 
